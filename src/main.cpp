@@ -1,5 +1,8 @@
+#include <cstdio>
+#include <cstring>
 #include <expected>
 #include <format>
+#include <unistd.h>
 
 import Netlink;
 import Logging;
@@ -27,9 +30,15 @@ void handle_added_device(std::string_view device_path) {
           std::format("Failed to unmount device: {}", currently_mounted_path)
               .c_str());
       LOG::WARN(umount_status.error().what());
-      currently_mounted_path.clear();
+    }
+    auto rmdir_status = rmdir(currently_mounted_path.c_str());
+    if (rmdir_status < 0) {
+        LOG::WARN("Failed to delete mount point.");
+        LOG::WARN(strerror(rmdir_status));
     }
   }
+
+    currently_mounted_path.clear();
 
   auto filesystem = Filesystem::detect_filesystem(device_path.data());
   if (!filesystem.has_value()) {
@@ -84,6 +93,12 @@ void handle_added_device(std::string_view device_path) {
     LOG::WARN("Failed to unmount device.");
     LOG::WARN(umount_status.error().what());
     return;
+  }
+
+  auto rmdir_status = rmdir(currently_mounted_path.c_str());
+  if (rmdir_status < 0) {
+      LOG::WARN("Failed to delete mountpoint.");
+      LOG::WARN(strerror(rmdir_status));
   }
   currently_mounted_path.clear();
 }
