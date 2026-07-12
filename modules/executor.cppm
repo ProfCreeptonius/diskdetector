@@ -1,6 +1,7 @@
 module;
 
 #include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <expected>
 #include <filesystem>
@@ -84,7 +85,7 @@ run_keyfile_check(const char *mountpoint) {
       LOG::WARN(strerror(wait_status));
       return false;
     } else {
-      if (WIFEXITED(child_status)) {
+      if (WIFEXITED(child_status) && WEXITSTATUS(child_status) == 0) {
         return true;
       }
       return false;
