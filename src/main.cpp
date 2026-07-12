@@ -65,27 +65,23 @@ void handle_added_device(std::string_view device_path) {
   if (!key_check_status.has_value()) {
     LOG::WARN("Failed to execute key check script! Reason:");
     LOG::WARN(key_check_status.error().what());
-    return;
-  }
-
-  if (!*key_check_status) {
+  } else if (!*key_check_status) {
     LOG::INFO(std::format("Refusing to run script on device {}, keycheck "
                           "returned non-zero exit code.",
                           currently_mounted_path)
                   .c_str());
     LOG::INFO(device_path.data());
-    return;
+  } else {
+    LOG::INFO("Running script.");
+    auto script_status =
+        Executor::run_script_on_mountpoint(currently_mounted_path.c_str());
+    if (!key_check_status.has_value()) {
+        LOG::WARN("Script failed.");
+        LOG::WARN(key_check_status.error().what());
+    }
   }
 
-  LOG::INFO("Running script.");
-  auto script_status =
-      Executor::run_script_on_mountpoint(currently_mounted_path.c_str());
-  if (!key_check_status.has_value()) {
-    LOG::WARN("Script failed.");
-    LOG::WARN(key_check_status.error().what());
-  }
-
-  LOG::INFO(std::format("Successfully ran script on device, unmounting: {}",
+  LOG::INFO(std::format("Unmounting: {}",
                         currently_mounted_path)
                 .c_str());
   auto umount_status = Mount::attempt_unmount(currently_mounted_path.c_str());
